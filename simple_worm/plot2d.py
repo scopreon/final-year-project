@@ -109,7 +109,7 @@ def multiple_FS_to_clip(worms: [str, FrameSequenceNumpy], outname = "midline", d
 
     colors = "bgrcmk"
 
-    plots = [plt.plot([],[],'k-', color='#'+str(w % 10) * 6, label=worms[w][0])[0] for w in range(len(worms))]
+    plots = [plt.plot([],[],'k-', color='#'+str(w % 10) * 6, label=f"{w}: {worms[w][0]}")[0] for w in range(len(worms))]
     labels = [plt.text(0,0,str(i),verticalalignment='bottom', horizontalalignment='left') for i in range(len(worms))]
 
     data=[[] for _ in range(len(worms))]
@@ -135,3 +135,6 @@ def multiple_FS_to_clip(worms: [str, FrameSequenceNumpy], outname = "midline", d
                 
 
             writer.grab_frame()
+
+def multiple_worm_path()
+    break

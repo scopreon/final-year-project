@@ -34,6 +34,7 @@ class NeuralParameters:
         MUSCLE_LOSS=NP_DEFAULT_MUSCLE_LOSS,
         PF_UNITS=NP_DEFAULT_PF_UNITS,
         USE_HEAD_NECK_CIRCUIT=NP_DEFAULT_USE_HEAD_NECK_CIRCUIT,
+        TEMP_VAR=None
     ) -> None:
         self.neural_units = NEURAL_UNITS
         self.alpha0 = ALPHA
@@ -46,4 +47,5 @@ class NeuralParameters:
         self.muscle_start = MUSCLE_START
         self.muscle_loss = MUSCLE_LOSS
         self.pf_units = PF_UNITS
-        self.USE_HEAD_NECK_CIRCUIT = USE_HEAD_NECK_CIRCUIT
+        self.head_neck_used = USE_HEAD_NECK_CIRCUIT
+        self.temp_var = TEMP_VAR

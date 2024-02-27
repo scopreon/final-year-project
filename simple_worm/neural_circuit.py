@@ -19,6 +19,8 @@ The structure and some comments from the original code are preserved for readabi
 
 class NeuralModel:
     def __init__(self, N, dt, NP = NeuralParameters()):
+        
+        self.temp_var = NP.temp_var
 
         self.nseg = N  # Number of Segments in the body
         self.i_sr = np.zeros((self.nseg, 2))  # Input from stretch receptors
@@ -155,10 +157,13 @@ class NeuralModel:
                 self.state[i, 1] = 1
             else:
                 self.state[i, 1] = 0
-                
+        
+        # val = self.temp_var
+        val = 0
         for i in range(self.nseg):
             self.v_neuron[i, 0] = self.nmj_weight[i]*self.state[int(i*(self.n_units/self.nseg)), 0] - self.nmj_weight[i]*self.state[int(i*(self.n_units/self.nseg)), 1]
             self.v_neuron[i, 1] = self.nmj_weight[i] * self.state[int(i * (self.n_units / self.nseg)), 1] - self.nmj_weight[i] * self.state[int(i * (self.n_units / self.nseg)), 0]
+        # print(self.v_neuron)
 
 
     def update_stretch_receptors(self, alpha):
@@ -205,15 +210,24 @@ class NeuralModel:
     def update_muscles(self, alpha):
         t_muscle = 0.01 / self.dt
         t_muscle = 0.1
-        bias_factor = 1  # Slightly more than 1 to introduce a bias towards the first muscle
-        bias_constant = -0.0  # A small constant bias to further favor the first muscle
+        bias_factor_1 = 1  # Slightly more than 1 to introduce a bias towards the first muscle
+        bias_factor_2 = 1
+        bias_constant = 0  # A small constant bias to further favor the first muscle
+
+        for i in range(0,12):
+            # self.v_neuron[i][1] -= self.temp_var[0]
+            # self.v_neuron[i][0] *= 0
+            self.v_neuron[i][0] += self.temp_var[0]
+            self.v_neuron[i][1] += self.temp_var[1]
+
         for i in range(self.nseg):
             dv = (self.v_neuron[i][0] - self.v_muscle[i][0])/t_muscle
             self.v_muscle[i][0] += dv*self.dt
             dv = (self.v_neuron[i][1] - self.v_muscle[i][1])/t_muscle
             self.v_muscle[i][1] += dv*self.dt
-            activation = (self.v_muscle[i][0] * bias_factor + bias_constant) - self.v_muscle[i][1]
+            activation = self.v_muscle[i][0] - self.v_muscle[i][1]
             alpha[i] += (-alpha[i] + (self.alpha0*activation)) * t_muscle
+        
         return alpha
     
     # def update_muscles(self, alpha):
@@ -241,4 +255,8 @@ class NeuralModel:
 
 # this will contain the circuit for the worm, used for turning
 class HeadAndNeckCircuit(NeuralModel):
+    # update ASE
+    # update Send to AIY
+    # AIZ
+    # Combine with stretch receptor etc
     pass
