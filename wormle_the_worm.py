@@ -22,25 +22,30 @@ import itertools
 # multiple_FS_to_clip(seq, outname="0.001")
 final_y_coords = []
 seq=[]
-# for i,j in itertools.permutations([x for x in [-0.6,0.4,-0.2,0,0.2,0.4,0.6]], r=2):
-for (i,j) in [(-0.5,0.5),(0.5,-0.5)]:
+perms = itertools.permutations([x for x in [-0.6,-0.4,-0.2,0,0.2,0.4,0.6]], r=2)
+perms = itertools.product([-0.6,-0.4,-0.2,0],[0.6,0.4,0.2,0])
+# print(*perms)
+
+for i,j in perms:
+# for (i,j) in [(-x/10,x/10) for x in range(5,10,1)]:
     print(i,j)
-    myworm = Worm(N=48, dt=0.01, neural_control=True, NP = NeuralParameters(TEMP_VAR=[i,j], AVB=0.405))
-    seq.append([i, myworm.solve(10, MP=MaterialParametersFenics(), reset=True).to_numpy()])
-    final_y_coords.append([i,j,myworm.get_x()[2][0]])
+    myworm = Worm(N=48, dt=0.01, neural_control=True, NP = NeuralParameters(TEMP_VAR=[i,j]))
+    seq.append([(i,j), myworm.solve(10, MP=MaterialParametersFenics(), reset=True).to_numpy()])
+    # final_y_coords.append([i,j,myworm.get_x()[2][0]])
+
+
     # break
     
-
-for x in final_y_coords:
-    print(x)
-multiple_FS_to_clip(seq, outname="left_turn", xlim=[-1,5])
+# multiple_worm_path([seq[len(seq)-1]], outname=f"./pics/{int(i*10)}_{int(j*10)}", xlim=[-1,5])
+# for x in final_y_coords:
+#     print(x)
+# multiple_FS_to_clip(seq, outname="left_turn", xlim=[-1,5])
+multiple_worm_path_matrix(seq, outname=f"pics/{int(i*10)}_{int(j*10)}.png", xlim=[-1,5])
 
 # myworm = Worm(N=48, dt=0.001, neural_control=True)
 # seq=[]
 # seq.append(["Wormle",myworm.solve(3, MP=MaterialParametersFenics(), reset=True).to_numpy()])
 # multiple_FS_to_clip(seq, outname="0.001")
-
-
 
 
 # ,seq4.to_numpy()

@@ -136,5 +136,73 @@ def multiple_FS_to_clip(worms: [str, FrameSequenceNumpy], outname = "midline", d
 
             writer.grab_frame()
 
-def multiple_worm_path()
-    break
+# draws the path of the worms, changes window size dynamically
+# def multiple_worm_path(worms: [str, FrameSequenceNumpy], outname = "midline", xlim = [-1,3], ylim = [-3,1]):
+#     data=[[] for _ in range(len(worms))]
+#     for i, (name, FS) in enumerate(worms):
+#         for f in FS:
+#             data[i].append((np.float_(f.x[0][0]),np.float_(f.x[2][0])))
+    
+#     plt.figure()
+#     for line in data:
+#     # Unpack the points into x and y coordinates
+#         x, y = zip(*line)
+#         plt.plot(x, y) 
+
+#     plt.title('Line Shapes Plot')
+#     plt.xlabel('X axis')
+#     plt.ylabel('Y axis')
+
+#     # Show the plot
+#     # plt.show()
+
+#     # Save the plot to a file
+#     print(outname)
+#     plt.savefig(outname)
+#     plt.close()
+
+
+
+
+
+def multiple_worm_path_matrix(worms: [(str, 'FrameSequenceNumpy')], outname="midline", xlim=[-1, 3], ylim=[-3, 1]):
+    # Determine the size of the grid
+    # positions = [name for name, _ in worms]
+    # grid_x = max(x for x, _ in positions) + 1
+    # grid_y = max(y for _, y in positions) + 1
+
+    grid_x = int(np.ceil(np.sqrt(len(worms))))
+    grid_y = grid_x
+    
+    # Create a figure with subplots in a matrix grid formation
+    fig, axs = plt.subplots(grid_y, grid_x, figsize=(grid_x * 5, grid_y * 5))
+    # Ensure axs is a 2D array for consistency in indexing
+    if grid_x == 1 or grid_y == 1:
+        axs = np.array(axs).reshape(grid_y, grid_x)
+    
+    # Initialize a blank list to store plot data for each worm
+    data = [[] for _ in range(len(worms))]
+    for i, (name, FS) in enumerate(worms):
+        # Extract the subplot position from the worm's name
+        # pos_x, pos_y = map(int, name.split('_'))
+        pos_x, pos_y = int(i/grid_x), int(i%grid_y)
+        for f in FS:
+            data[i].append((np.float_(f.x[0][0]), np.float_(f.x[2][0])))
+        
+        # Plot each worm's path in its corresponding subplot
+        x, y = zip(*data[i])
+        axs[pos_y, pos_x].plot(x, y)
+        axs[pos_y, pos_x].set_xlim(xlim)
+        axs[pos_y, pos_x].set_ylim(ylim)
+        axs[pos_y, pos_x].set_title(f'Worm at {name}')
+    
+    # Set a main title and adjust layout
+    plt.suptitle('Multiple Worm Paths in Matrix Grid')
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    
+    # Save the plot to a file
+    print(outname)
+    plt.savefig(outname)
+    plt.close()
+
+# Note: 'FrameSequenceNumpy' should be replaced with the appropriate type for FS if needed.

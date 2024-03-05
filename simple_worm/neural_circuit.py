@@ -125,12 +125,19 @@ class NeuralModel:
         # Combine AVB current, stretch receptor current, neural inhibition and bias
         for i in range(self.n_units):
             # If AVB is not symmetric
-            if not self.sym_avb:
-                i_d[i] = self.i_on_d + self.sr_weight[i] * self.i_sr_d[i]  # Use dorsal AVB input here
-                i_v[i] = (i_bias - self.state[i, 0]) + self.i_on_v + self.sr_weight[i] * self.i_sr_v[i]  # Use ventral AVB input here
+            pc_out = 0
+
+            if i < 3:
+                pc_out = 1
             else:
-                i_d[i] = self.i_on + self.sr_weight[i] * self.i_sr_d[i]
-                i_v[i] = (i_bias - self.state[i, 0]) + self.i_on + self.sr_weight[i] * self.i_sr_v[i]
+                pc_out = 1
+
+            if not self.sym_avb:
+                i_d[i] = self.i_on_d + self.sr_weight[i] * self.i_sr_d[i] * pc_out  # Use dorsal AVB input here
+                i_v[i] = (i_bias - self.state[i, 0]) + self.i_on_v + self.sr_weight[i] * self.i_sr_v[i] * pc_out  # Use ventral AVB input here
+            else:
+                i_d[i] = self.i_on + self.sr_weight[i] * self.i_sr_d[i] * pc_out
+                i_v[i] = (i_bias - self.state[i, 0]) + self.i_on + self.sr_weight[i] * self.i_sr_v[i] * pc_out
 
 
 
