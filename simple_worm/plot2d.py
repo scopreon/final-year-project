@@ -171,8 +171,8 @@ def multiple_worm_path_matrix(worms: [(str, 'FrameSequenceNumpy')], outname="mid
     # grid_x = max(x for x, _ in positions) + 1
     # grid_y = max(y for _, y in positions) + 1
 
-    grid_x = 4
-    grid_y = 4
+    grid_x = int(np.ceil(np.sqrt(len(worms))))
+    grid_y = grid_x
     
     # Create a figure with subplots in a matrix grid formation
     fig, axs = plt.subplots(grid_y, grid_x, figsize=(grid_x * 5, grid_y * 5))
@@ -185,7 +185,7 @@ def multiple_worm_path_matrix(worms: [(str, 'FrameSequenceNumpy')], outname="mid
     for i, (name, FS) in enumerate(worms):
         # Extract the subplot position from the worm's name
         # pos_x, pos_y = map(int, name.split('_'))
-        pos_x, pos_y = int(i/4), int(i%4)
+        pos_x, pos_y = int(i/grid_x), int(i%grid_y)
         for f in FS:
             data[i].append((np.float_(f.x[0][0]), np.float_(f.x[2][0])))
         
@@ -202,7 +202,7 @@ def multiple_worm_path_matrix(worms: [(str, 'FrameSequenceNumpy')], outname="mid
     
     # Save the plot to a file
     print(outname)
-    plt.savefig("test123.png")
+    plt.savefig(outname)
     plt.close()
 
 # Note: 'FrameSequenceNumpy' should be replaced with the appropriate type for FS if needed.

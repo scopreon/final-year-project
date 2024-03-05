@@ -30,7 +30,7 @@ for i,j in perms:
 # for (i,j) in [(-x/10,x/10) for x in range(5,10,1)]:
     print(i,j)
     myworm = Worm(N=48, dt=0.01, neural_control=True, NP = NeuralParameters(TEMP_VAR=[i,j]))
-    seq.append([(i,j), myworm.solve(1, MP=MaterialParametersFenics(), reset=True).to_numpy()])
+    seq.append([(i,j), myworm.solve(10, MP=MaterialParametersFenics(), reset=True).to_numpy()])
     # final_y_coords.append([i,j,myworm.get_x()[2][0]])
 
 
