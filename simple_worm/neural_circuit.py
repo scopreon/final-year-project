@@ -89,6 +89,9 @@ class NeuralModel:
         for i in range(self.nseg):
             self.sr_shape_compensation[i] = d/self.width[i]
 
+    def update_sensors(self, env):
+        print(env)
+
     def update_neurons(self):
         # Add up stretch receptor contributions from all body segments in receptive field for each neural unit
         for i in range(self.n_units - self.n_sr + 1):
@@ -252,7 +255,8 @@ class NeuralModel:
 
 
 
-    def update_all(self, alpha):
+    def update_all(self, alpha, env):
+        self.update_sensors(env)
         self.update_stretch_receptors(alpha)
         self.update_neurons()
         return self.update_muscles(alpha)
