@@ -3,6 +3,8 @@
 # create as many as u want
 # given an x,y coordinate return the parameters at that point
 
+
+# need to store the function somehere
 class Environment:
     def __init__(self):
         # Initialize an empty dictionary to hold parameter name -> lambda function mappings
@@ -15,3 +17,6 @@ class Environment:
     def get_parameters_at(self, x, y):
         # Given x, y coordinates, return a dictionary of parameter values at that point
         return {name: func(x, y) for name, func in self.parameters.items()}
+
+    def get_parameter_func(self, name):
+        return self.parameters[name]
