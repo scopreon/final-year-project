@@ -10,11 +10,16 @@ import numpy
 
 # Example usage
 env = Environment()
-# env.add_parameter('concentration', lambda x, y: x * 0.1)
-env.add_parameter('concentration', lambda x, y: np.sqrt(x**2 + y**2))
-
-
+env.add_parameter('concentration', lambda x, y: (5-y * 0.1))
 seq = []
-myworm = Worm(N=48, dt=0.01, neural_control=True, NP = NeuralParameters(TEMP_VAR=[0,0]), environment=env)
-seq.append(["Wormle", myworm.solve(1, MP=MaterialParametersFenics(), reset=True).to_numpy()])
+myworm = Worm(N=48, dt=0.01, neural_control=True, NP = NeuralParameters(TEMP_VAR=[0,0], AVB=0.405), environment=env)
+seq.append(["Wormle", myworm.solve(5, MP=MaterialParametersFenics(), reset=True).to_numpy()])
 multiple_FS_to_clip(seq, outname="wormle", xlim=[-1,5], concentration_func=env.get_parameter_func('concentration'))
+
+
+env = Environment()
+env.add_parameter('concentration', lambda x, y: (5+y * 0.1))
+seq = []
+myworm = Worm(N=48, dt=0.01, neural_control=True, NP = NeuralParameters(TEMP_VAR=[0,0], AVB=0.405), environment=env)
+seq.append(["Wormle", myworm.solve(5, MP=MaterialParametersFenics(), reset=True).to_numpy()])
+multiple_FS_to_clip(seq, outname="wormle2", xlim=[-1,5], concentration_func=env.get_parameter_func('concentration'))

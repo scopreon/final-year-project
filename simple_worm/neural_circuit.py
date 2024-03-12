@@ -1,5 +1,7 @@
 import numpy as np
+from collections import deque
 from simple_worm.neural_parameters import NeuralParameters
+from decimal import Decimal
 """
 Code in this file is based off of the model and software presented in:
 J.H. Boyle, S. Berri and N. Cohen (2012), Gait modulation in C. elegans:
@@ -17,9 +19,29 @@ The original code is available at https://www.frontiersin.org/articles/10.3389/f
 The structure and some comments from the original code are preserved for readability
 """
 
+# for a steering cirtuit
+# needs weights
+
 class NeuralModel:
     def __init__(self, N, dt, NP = NeuralParameters()):
         
+
+        self.neurone
+
+        self.steering_parameters = NP.steering_parameters
+        self.asu_sensors = np.zeros(2)  # Initialize two sensors
+        
+        self.steering_circuit
+
+        # Initialize history buffers for each sensor to store recent concentration values
+        # FIFO queue, use collections queue dequeue
+        history_size = int((self.steering_parameters.M + self.steering_parameters.N)/dt)
+        self.concentrations = deque(maxlen=history_size)
+        assert Decimal(str(self.steering_parameters.M)) % Decimal(str(dt)) == 0
+        assert Decimal(str(self.steering_parameters.N)) % Decimal(str(dt)) == 0
+
+        # end of sensor stuff
+
         self.temp_var = NP.temp_var
 
         self.nseg = N  # Number of Segments in the body
@@ -89,8 +111,48 @@ class NeuralModel:
         for i in range(self.nseg):
             self.sr_shape_compensation[i] = d/self.width[i]
 
+    # check over this code, if its dodgy, the start_m and end_m should be fixed
+            
+
+    def update_concentration_sensors(self, env):
+        # use dt to calculate average over time period
+        # use history buffers
+
+
+        self.concentrations.append(env["concentration"])
+        # print(self.concentrations)
+        def calculate_differential():
+            # Calculate averages based on the available data in the FIFO queue
+            len_concentrations = len(self.concentrations)
+            start_M = max(0, len_concentrations - int(self.steering_parameters.N/self.dt) - int(self.steering_parameters.M/self.dt))
+            end_M = max(0, len_concentrations - int(self.steering_parameters.N/self.dt))
+            cM = np.mean(list(self.concentrations)[start_M:end_M]) if start_M != end_M else 0
+
+            start_N = max(0, len_concentrations - int(self.steering_parameters.N/self.dt))
+            cN = np.mean(list(self.concentrations)[start_N:]) if start_N < len_concentrations else 0
+
+            # Return the differential
+            return cN - cM
+
+
+        # Update sensors based on the differential calculation
+        differential = calculate_differential()
+        self.asu_sensors[0] = max(0,differential)  # Standard sensor
+        self.asu_sensors[1] = max(0,-differential)  # OFF sensor (inverted sign)
+
+        # whichever direction we are moving in store that data
+        print(self.asu_sensors)
+        # print(env)
+        pass
+
     def update_sensors(self, env):
-        print(env)
+        if env.get("concentrations") is not None:
+            self.update_concentration_sensors(env)
+        else:
+            pass
+    
+    def update_steering_neurons(self):
+        pass
 
     def update_neurons(self):
         # Add up stretch receptor contributions from all body segments in receptive field for each neural unit

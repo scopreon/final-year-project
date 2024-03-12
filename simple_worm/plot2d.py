@@ -179,10 +179,6 @@ def multiple_worm_path_matrix(worms: [(str, 'FrameSequenceNumpy')], outname="mid
     # positions = [name for name, _ in worms]
     # grid_x = max(x for x, _ in positions) + 1
     # grid_y = max(y for _, y in positions) + 1
-
-
-
-
     grid_x = int(np.ceil(np.sqrt(len(worms))))
     grid_y = grid_x
     
