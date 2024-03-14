@@ -1,7 +1,8 @@
 import numpy as np
-from collections import deque
 from simple_worm.neural_parameters import NeuralParameters
-from decimal import Decimal
+from decimal import Decimal, getcontext
+from simple_worm.steering_circuit import SteeringCircuit
+import random
 """
 Code in this file is based off of the model and software presented in:
 J.H. Boyle, S. Berri and N. Cohen (2012), Gait modulation in C. elegans:
@@ -22,25 +23,16 @@ The structure and some comments from the original code are preserved for readabi
 # for a steering cirtuit
 # needs weights
 
+# getcontext().prec = 50
+
 class NeuralModel:
     def __init__(self, N, dt, NP = NeuralParameters()):
         
+        self.counter = 0
+        # self.neurone
 
-        self.neurone
-
-        self.steering_parameters = NP.steering_parameters
-        self.asu_sensors = np.zeros(2)  # Initialize two sensors
-        
-        self.steering_circuit
-
-        # Initialize history buffers for each sensor to store recent concentration values
-        # FIFO queue, use collections queue dequeue
-        history_size = int((self.steering_parameters.M + self.steering_parameters.N)/dt)
-        self.concentrations = deque(maxlen=history_size)
-        assert Decimal(str(self.steering_parameters.M)) % Decimal(str(dt)) == 0
-        assert Decimal(str(self.steering_parameters.N)) % Decimal(str(dt)) == 0
-
-        # end of sensor stuff
+        self.steering = NP.steering
+        self.steering_circuit = SteeringCircuit(parameters=NP.steering_parameters, dt=dt)
 
         self.temp_var = NP.temp_var
 
@@ -85,6 +77,7 @@ class NeuralModel:
 
         # Initialise with all neurons on one side ON
         for i in range(self.n_units):
+            flip = random.randint(0, 1)
             self.state[i][0] = 1
             self.state[i][1] = 0
 
@@ -111,46 +104,6 @@ class NeuralModel:
         for i in range(self.nseg):
             self.sr_shape_compensation[i] = d/self.width[i]
 
-    # check over this code, if its dodgy, the start_m and end_m should be fixed
-            
-
-    def update_concentration_sensors(self, env):
-        # use dt to calculate average over time period
-        # use history buffers
-
-
-        self.concentrations.append(env["concentration"])
-        # print(self.concentrations)
-        def calculate_differential():
-            # Calculate averages based on the available data in the FIFO queue
-            len_concentrations = len(self.concentrations)
-            start_M = max(0, len_concentrations - int(self.steering_parameters.N/self.dt) - int(self.steering_parameters.M/self.dt))
-            end_M = max(0, len_concentrations - int(self.steering_parameters.N/self.dt))
-            cM = np.mean(list(self.concentrations)[start_M:end_M]) if start_M != end_M else 0
-
-            start_N = max(0, len_concentrations - int(self.steering_parameters.N/self.dt))
-            cN = np.mean(list(self.concentrations)[start_N:]) if start_N < len_concentrations else 0
-
-            # Return the differential
-            return cN - cM
-
-
-        # Update sensors based on the differential calculation
-        differential = calculate_differential()
-        self.asu_sensors[0] = max(0,differential)  # Standard sensor
-        self.asu_sensors[1] = max(0,-differential)  # OFF sensor (inverted sign)
-
-        # whichever direction we are moving in store that data
-        print(self.asu_sensors)
-        # print(env)
-        pass
-
-    def update_sensors(self, env):
-        if env.get("concentrations") is not None:
-            self.update_concentration_sensors(env)
-        else:
-            pass
-    
     def update_steering_neurons(self):
         pass
 
@@ -267,40 +220,71 @@ class NeuralModel:
     # Signatures of proprioceptive control in Caenorhabditis elegans locomotion
     # Phil. Trans. R. Soc. B3732018020820180208
     # http://doi.org/10.1098/rstb.2018.0208
-    # def update_muscles(self, alpha):
-    #     t_muscle = 0.1 / self.dt
-    #     for i in range(self.nseg):
-    #         dv = (self.v_neuron[i][0] - self.v_muscle[i][0])/0.1
-    #         self.v_muscle[i][0] += dv*self.dt
-    #         dv = (self.v_neuron[i][1] - self.v_muscle[i][1])/0.1
-    #         self.v_muscle[i][1] += dv*self.dt
-    #         activation = self.v_muscle[i][0] - self.v_muscle[i][1]
-    #         alpha[i] += (-alpha[i] + (self.alpha0*activation))/t_muscle
-    #     return alpha
-
-
+            
     def update_muscles(self, alpha):
-        t_muscle = 0.01 / self.dt
+        self.counter+=1
+        # if self.counter > 100:
+            # self.dt = 0.001
         t_muscle = 0.1
-        bias_factor_1 = 1  # Slightly more than 1 to introduce a bias towards the first muscle
-        bias_factor_2 = 1
-        bias_constant = 0  # A small constant bias to further favor the first muscle
-
-        for i in range(0,12):
-            # self.v_neuron[i][1] -= self.temp_var[0]
-            # self.v_neuron[i][0] *= 0
-            self.v_neuron[i][0] += self.temp_var[0]
-            self.v_neuron[i][1] += self.temp_var[1]
-
         for i in range(self.nseg):
             dv = (self.v_neuron[i][0] - self.v_muscle[i][0])/t_muscle
             self.v_muscle[i][0] += dv*self.dt
             dv = (self.v_neuron[i][1] - self.v_muscle[i][1])/t_muscle
             self.v_muscle[i][1] += dv*self.dt
             activation = self.v_muscle[i][0] - self.v_muscle[i][1]
-            alpha[i] += (-alpha[i] + (self.alpha0*activation)) * t_muscle
-        
+
+            alpha[i] += ((-alpha[i] + (self.alpha0*activation)) / t_muscle) * self.dt
+            
         return alpha
+
+
+    # def update_muscles(self, alpha):
+    #         self.counter += 1
+    #         t_muscle = Decimal('0.1')
+            
+    #         # Convert alpha to a list of Decimal for high-precision computation
+    #         alpha_decimal = [Decimal(str(a)) for a in alpha]
+            
+    #         for i in range(self.nseg):
+    #             for j in range(2):  # Assuming v_neuron and v_muscle have 2 components each
+    #                 dv = (Decimal(str(self.v_neuron[i][j])) - Decimal(str(self.v_muscle[i][j]))) / t_muscle
+    #                 self.v_muscle[i][j] = Decimal(str(self.v_muscle[i][j])) + dv * Decimal(str(self.dt))
+
+    #             activation = Decimal(str(self.v_muscle[i][0])) - Decimal(str(self.v_muscle[i][1]))
+    #             alpha_decimal[i] += ((-alpha_decimal[i] + (Decimal(self.alpha0) * activation)) / t_muscle) * Decimal(str(self.dt))
+
+    #         # Convert alpha back to a NumPy array of floats only at the end
+    #         alpha = np.array([float(a) for a in alpha_decimal], dtype=np.float64)
+            
+    #         return alpha
+
+
+
+
+
+    # def update_muscles(self, alpha):
+    #     t_muscle = 0.01 / self.dt
+    #     t_muscle = 0.1
+    #     t_muscle = self.temp_var[0]
+    #     bias_factor_1 = 1  # Slightly more than 1 to introduce a bias towards the first muscle
+    #     bias_factor_2 = 1
+    #     bias_constant = 0  # A small constant bias to further favor the first muscle
+
+    #     # for i in range(0,12):
+    #     #     # self.v_neuron[i][1] -= self.temp_var[0]
+    #     #     # self.v_neuron[i][0] *= 0
+    #     #     self.v_neuron[i][0] += self.temp_var[0]
+    #     #     self.v_neuron[i][1] += self.temp_var[1]
+
+    #     for i in range(self.nseg):
+    #         dv = (self.v_neuron[i][0] - self.v_muscle[i][0])/t_muscle
+    #         self.v_muscle[i][0] += dv*self.dt
+    #         dv = (self.v_neuron[i][1] - self.v_muscle[i][1])/t_muscle
+    #         self.v_muscle[i][1] += dv*self.dt
+    #         activation = self.v_muscle[i][0] - self.v_muscle[i][1]
+    #         alpha[i] += (-alpha[i] + (self.alpha0*activation)) * t_muscle
+        
+    #     return alpha
     
     # def update_muscles(self, alpha):
     #     t_muscle = 0.1 / self.dt
@@ -318,8 +302,11 @@ class NeuralModel:
 
 
     def update_all(self, alpha, env):
-        self.update_sensors(env)
         self.update_stretch_receptors(alpha)
+
+        if self.steering:
+            self.update_steering(env)
+
         self.update_neurons()
         return self.update_muscles(alpha)
 

@@ -22,6 +22,7 @@ NP_DEFAULT_PF_UNITS = 6  # proprioceptive units
 
 NP_DEFAULT_STEERING_PARAMETERS = SteeringParameters() # default value for M in steering
 
+NP_DEFAULT_STEERING = False
 
 class NeuralParameters:
     def __init__(
@@ -39,6 +40,7 @@ class NeuralParameters:
         PF_UNITS=NP_DEFAULT_PF_UNITS,
         USE_HEAD_NECK_CIRCUIT=NP_DEFAULT_USE_HEAD_NECK_CIRCUIT,
         STEERING_PARAMETERS=NP_DEFAULT_STEERING_PARAMETERS,
+        STEERING=NP_DEFAULT_STEERING,
         TEMP_VAR=None
     ) -> None:
         self.neural_units = NEURAL_UNITS
@@ -54,4 +56,5 @@ class NeuralParameters:
         self.pf_units = PF_UNITS
         self.head_neck_used = USE_HEAD_NECK_CIRCUIT
         self.steering_parameters = STEERING_PARAMETERS
+        self.steering=STEERING
         self.temp_var = TEMP_VAR

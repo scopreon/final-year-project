@@ -103,6 +103,7 @@ def csv_to_frequency(name = "alpha", dt=0.001):
                 t=0
     print(ts)
     return statistics.mean(ts)
+
 from matplotlib.colors import LinearSegmentedColormap
 def multiple_FS_to_clip(worms, outname="midline", dt=0.001, speed=1, xlim=[-1,3], ylim=[-3,1], concentration_func=None):
     fig, ax = plt.subplots()
@@ -146,29 +147,33 @@ def multiple_FS_to_clip(worms, outname="midline", dt=0.001, speed=1, xlim=[-1,3]
             writer.grab_frame()
 
 # draws the path of the worms, changes window size dynamically
-# def multiple_worm_path(worms: [str, FrameSequenceNumpy], outname = "midline", xlim = [-1,3], ylim = [-3,1]):
-#     data=[[] for _ in range(len(worms))]
-#     for i, (name, FS) in enumerate(worms):
-#         for f in FS:
-#             data[i].append((np.float_(f.x[0][0]),np.float_(f.x[2][0])))
+def multiple_worm_path(worms: [str, FrameSequenceNumpy], outname = "midline", xlim = [-1,3], ylim = [-3,1]):
+    data=[[] for _ in range(len(worms))]
+    for i, (name, FS) in enumerate(worms):
+        for f in FS:
+            data[i].append((np.float_(f.x[0][0]),np.float_(f.x[2][0])))
     
-#     plt.figure()
-#     for line in data:
-#     # Unpack the points into x and y coordinates
-#         x, y = zip(*line)
-#         plt.plot(x, y) 
+    plt.figure()
+    for line in data:
+    # Unpack the points into x and y coordinates
+        x, y = zip(*line)
+        plt.plot(x, y) 
+    
+    
+    plt.xlim(xlim[0], xlim[1])  # Set limits for x-axis
+    plt.ylim(ylim[0], ylim[1])  # Set limits for y-axis
 
-#     plt.title('Line Shapes Plot')
-#     plt.xlabel('X axis')
-#     plt.ylabel('Y axis')
+    plt.title('Line Shapes Plot')
+    plt.xlabel('X axis')
+    plt.ylabel('Y axis')
 
-#     # Show the plot
-#     # plt.show()
+    # Show the plot
+    # plt.show()
 
-#     # Save the plot to a file
-#     print(outname)
-#     plt.savefig(outname)
-#     plt.close()
+    # Save the plot to a file
+    print(outname)
+    plt.savefig(f'pics/{outname}')
+    plt.close()
 
 
 

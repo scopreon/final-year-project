@@ -183,7 +183,7 @@ class Worm:
             csvfile = open(savefile + '.csv', 'w', newline='')
             csvwriter = csv.writer(csvfile)
         for i in range(n_timesteps):
-            # self._print(f't={self.t:.3f}')
+            self._print(f't={self.t:.3f}')
             if self.neural_control:
                 if savefile != "":
                     try:

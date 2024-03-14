@@ -1,12 +1,14 @@
 import numpy as np
 
-SP_DEFAULT_M = 0.5
-SP_DEFAULT_N = 0.1
+SP_DEFAULT_M = 2
+SP_DEFAULT_N = 2
 
-SP_DEFAULT_SYNAPSES = 0
-SP_DEFAULT_JUNCTIONS = 0
+SP_DEFAULT_SYNAPSES = np.array([1,-2,1,1,1,1,1])
+SP_DEFAULT_JUNCTIONS = np.array([0,0])
 
-SP_DEFAULT_TIME_CONSTANT = 0
+SP_DEFAULT_TIME_CONSTANTS = np.array([0.1,0.1,0.1,0.1,0.1])
+
+SP_DEFAULT_THRESHOLDS = np.array([-5,-5,-5,-5,-5])
 
 class SteeringParameters:
     def __init__(
@@ -15,12 +17,14 @@ class SteeringParameters:
         N=SP_DEFAULT_N,
         SYNAPSES = SP_DEFAULT_SYNAPSES,
         JUNCTIONS = SP_DEFAULT_JUNCTIONS,
-        TIME_CONSTANT = SP_DEFAULT_TIME_CONSTANT,
+        TIME_CONSTANTS = SP_DEFAULT_TIME_CONSTANTS,
+        THRESHOLDS=SP_DEFAULT_THRESHOLDS,
         TEMP_VAR=None
     ) -> None:
         self.M=M
         self.N=N
         self.synapses=SYNAPSES
         self.junctions=JUNCTIONS
-        self.time_const=TIME_CONSTANT
+        self.time_consts=TIME_CONSTANTS
+        self.thresholds=THRESHOLDS
         self.temp_var = TEMP_VAR
