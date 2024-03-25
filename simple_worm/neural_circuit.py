@@ -3,6 +3,8 @@ from simple_worm.neural_parameters import NeuralParameters
 from decimal import Decimal, getcontext
 from simple_worm.steering_circuit import SteeringCircuit
 import random
+import os
+import csv
 """
 Code in this file is based off of the model and software presented in:
 J.H. Boyle, S. Berri and N. Cohen (2012), Gait modulation in C. elegans:
@@ -27,11 +29,8 @@ The structure and some comments from the original code are preserved for readabi
 
 class NeuralModel:
     def __init__(self, N, dt, NP = NeuralParameters()):
-        
-        self.counter = 0
-        # self.neurone
-
         self.steering = NP.steering
+
         self.steering_circuit = SteeringCircuit(parameters=NP.steering_parameters, dt=dt)
 
         self.temp_var = NP.temp_var
@@ -104,8 +103,33 @@ class NeuralModel:
         for i in range(self.nseg):
             self.sr_shape_compensation[i] = d/self.width[i]
 
-    def update_steering_neurons(self):
-        pass
+    def append_neuron_data_to_csv(self, timestamp, filename='neuron_data.csv'):
+        neuron_names = ['ASEL', 'ASER', 'AIYL', 'AIYR', 'AIZL', 'AIZR', 'VNEUL', 'VNEUR']
+        data = {
+            'ASEL': self.steering_circuit.ASE[0].get_output(),
+            'ASER': self.steering_circuit.ASE[1].get_output(),
+            'AIYL': self.steering_circuit.AIY[0].get_output(),
+            'AIYR': self.steering_circuit.AIY[1].get_output(),
+            'AIZL': self.steering_circuit.AIZ[0].get_output(),
+            'AIZR': self.steering_circuit.AIZ[1].get_output(),
+            'VNEUL': self.v_neuron[4, 0],  # Assuming this corrects the previous mismatch
+            'VNEUR': self.v_neuron[4, 1],  # Assuming this is correct and you intended to duplicate this value
+        }
+
+        if not os.path.isfile(filename):
+            with open('neuron_data.csv', 'w', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(['timestamp'] + neuron_names)
+
+        with open(filename, 'a', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            # Write the data row for the current timestamp
+            # The row includes the timestamp and the data for each neuron
+            writer.writerow([timestamp] + [data.get(name, '') for name in neuron_names])
+
+
+    def update_steering(self, env):
+        self.steering_circuit.update_state(env['concentration'])
 
     def update_neurons(self):
         # Add up stretch receptor contributions from all body segments in receptive field for each neural unit
@@ -157,10 +181,6 @@ class NeuralModel:
                 i_d[i] = self.i_on + self.sr_weight[i] * self.i_sr_d[i] * pc_out
                 i_v[i] = (i_bias - self.state[i, 0]) + self.i_on + self.sr_weight[i] * self.i_sr_v[i] * pc_out
 
-
-
-
-
         # Add gap junction currents if they are being used (typically i_coupling = 0)
         i_d[0] += (self.state[1, 0] - self.state[0, 0]) * self.i_coupling
         i_v[0] += (self.state[1, 1] - self.state[0, 1]) * self.i_coupling
@@ -186,8 +206,12 @@ class NeuralModel:
         # val = self.temp_var
         val = 0
         for i in range(self.nseg):
-            self.v_neuron[i, 0] = self.nmj_weight[i]*self.state[int(i*(self.n_units/self.nseg)), 0] - self.nmj_weight[i]*self.state[int(i*(self.n_units/self.nseg)), 1]
-            self.v_neuron[i, 1] = self.nmj_weight[i] * self.state[int(i * (self.n_units / self.nseg)), 1] - self.nmj_weight[i] * self.state[int(i * (self.n_units / self.nseg)), 0]
+            if i < 8 and self.steering:    
+                self.v_neuron[i, 0] = self.nmj_weight[i]*self.state[int(i*(self.n_units/self.nseg)), 0] - self.nmj_weight[i]*self.state[int(i*(self.n_units/self.nseg)), 1] + self.steering_circuit.AIZ_w[0] * self.steering_circuit.AIZ[0].get_output() + self.steering_circuit.AIZ_w[1] * self.steering_circuit.AIZ[1].get_output()
+                self.v_neuron[i, 1] = self.nmj_weight[i] * self.state[int(i * (self.n_units / self.nseg)), 1] - self.nmj_weight[i] * self.state[int(i * (self.n_units / self.nseg)), 0] + self.steering_circuit.AIZ_w[0] * self.steering_circuit.AIZ[1].get_output() + self.steering_circuit.AIZ_w[1] * self.steering_circuit.AIZ[0].get_output()
+            else:
+                self.v_neuron[i, 0] = self.nmj_weight[i]*self.state[int(i*(self.n_units/self.nseg)), 0] - self.nmj_weight[i]*self.state[int(i*(self.n_units/self.nseg)), 1]
+                self.v_neuron[i, 1] = self.nmj_weight[i] * self.state[int(i * (self.n_units / self.nseg)), 1] - self.nmj_weight[i] * self.state[int(i * (self.n_units / self.nseg)), 0]
         # print(self.v_neuron)
 
 
@@ -222,9 +246,6 @@ class NeuralModel:
     # http://doi.org/10.1098/rstb.2018.0208
             
     def update_muscles(self, alpha):
-        self.counter+=1
-        # if self.counter > 100:
-            # self.dt = 0.001
         t_muscle = 0.1
         for i in range(self.nseg):
             dv = (self.v_neuron[i][0] - self.v_muscle[i][0])/t_muscle
@@ -238,76 +259,12 @@ class NeuralModel:
         return alpha
 
 
-    # def update_muscles(self, alpha):
-    #         self.counter += 1
-    #         t_muscle = Decimal('0.1')
-            
-    #         # Convert alpha to a list of Decimal for high-precision computation
-    #         alpha_decimal = [Decimal(str(a)) for a in alpha]
-            
-    #         for i in range(self.nseg):
-    #             for j in range(2):  # Assuming v_neuron and v_muscle have 2 components each
-    #                 dv = (Decimal(str(self.v_neuron[i][j])) - Decimal(str(self.v_muscle[i][j]))) / t_muscle
-    #                 self.v_muscle[i][j] = Decimal(str(self.v_muscle[i][j])) + dv * Decimal(str(self.dt))
-
-    #             activation = Decimal(str(self.v_muscle[i][0])) - Decimal(str(self.v_muscle[i][1]))
-    #             alpha_decimal[i] += ((-alpha_decimal[i] + (Decimal(self.alpha0) * activation)) / t_muscle) * Decimal(str(self.dt))
-
-    #         # Convert alpha back to a NumPy array of floats only at the end
-    #         alpha = np.array([float(a) for a in alpha_decimal], dtype=np.float64)
-            
-    #         return alpha
-
-
-
-
-
-    # def update_muscles(self, alpha):
-    #     t_muscle = 0.01 / self.dt
-    #     t_muscle = 0.1
-    #     t_muscle = self.temp_var[0]
-    #     bias_factor_1 = 1  # Slightly more than 1 to introduce a bias towards the first muscle
-    #     bias_factor_2 = 1
-    #     bias_constant = 0  # A small constant bias to further favor the first muscle
-
-    #     # for i in range(0,12):
-    #     #     # self.v_neuron[i][1] -= self.temp_var[0]
-    #     #     # self.v_neuron[i][0] *= 0
-    #     #     self.v_neuron[i][0] += self.temp_var[0]
-    #     #     self.v_neuron[i][1] += self.temp_var[1]
-
-    #     for i in range(self.nseg):
-    #         dv = (self.v_neuron[i][0] - self.v_muscle[i][0])/t_muscle
-    #         self.v_muscle[i][0] += dv*self.dt
-    #         dv = (self.v_neuron[i][1] - self.v_muscle[i][1])/t_muscle
-    #         self.v_muscle[i][1] += dv*self.dt
-    #         activation = self.v_muscle[i][0] - self.v_muscle[i][1]
-    #         alpha[i] += (-alpha[i] + (self.alpha0*activation)) * t_muscle
-        
-    #     return alpha
-    
-    # def update_muscles(self, alpha):
-    #     t_muscle = 0.1 / self.dt
-    #     bias_factor = 2  # Slightly more than 1 to introduce a bias towards the second muscle
-    #     bias_constant = 0.01  # A small constant bias to further favor the second muscle
-    #     for i in range(self.nseg):
-    #         dv = (self.v_neuron[i][0] - self.v_muscle[i][0])/0.1
-    #         self.v_muscle[i][0] += dv*self.dt
-    #         dv = (self.v_neuron[i][1] - self.v_muscle[i][1])/0.1
-    #         self.v_muscle[i][1] += dv*self.dt
-    #         activation = self.v_muscle[i][0] - (self.v_muscle[i][1] * bias_factor + bias_constant)
-    #         alpha[i] += (-alpha[i] + (self.alpha0*activation))/t_muscle
-    #     return alpha
-
-
-
-    def update_all(self, alpha, env):
+    def update_all(self, alpha, env, timestamp):
         self.update_stretch_receptors(alpha)
-
         if self.steering:
             self.update_steering(env)
-
         self.update_neurons()
+        self.append_neuron_data_to_csv(timestamp=timestamp)
         return self.update_muscles(alpha)
 
 

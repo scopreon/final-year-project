@@ -17,32 +17,20 @@ class Neurone:
 class SensorNeuron(Neurone):
     def __init__(self, threshold, time_const) -> None:
         super().__init__(threshold, time_const)
-    def output(self):
-        return self.potential
+    def get_output(self):
+        # return self.potential
+        return sigmoid(self.potential + self.threshold)
 
 class InterNeuron(Neurone):
     def __init__(self, threshold, time_const) -> None:
         super().__init__(threshold, time_const)
-    def output(self):
+    def get_output(self):
         return sigmoid(self.potential + self.threshold)
 
 
 class SteeringCircuit:
-    def __init__(self, dt, parameters: SteeringParameters = SteeringParameters(), parameters_filename: str = None) -> None:
-        if parameters_filename is None:
-            self.parameters = parameters
-        else:
-            config = configparser.ConfigParser()
-            config.read(parameters_filename)
-            
-            if 'SYNAPSES' in config and 'THRESHOLDS' in config:
-                SYNAPSES = [float(config['SYNAPSES'][f'synapse_{i}']) for i in range(len(config['SYNAPSES']))]
-                THRESHOLDS = [float(config['THRESHOLDS'][f'threshold_{i}']) for i in range(len(config['THRESHOLDS']))]
-                self.parameters = SteeringParameters(SYNAPSES=SYNAPSES, THRESHOLDS=THRESHOLDS)
-                print("Parameters loaded from", parameters_filename)
-                # Optionally, update any UI elements like sliders here based on the loaded values
-            else:
-                print("Error: Invalid configuration file or missing sections.")
+    def __init__(self, dt, parameters: SteeringParameters = SteeringParameters()) -> None:
+        self.parameters = parameters
 
         history_size = int((self.parameters.M + self.parameters.N)/dt)
         self.concentrations = deque(maxlen=history_size)
@@ -58,8 +46,8 @@ class SteeringCircuit:
 
         # weights coming out of neuron
         self.ASE_w = parameters.synapses[0:2]
-        self.AIY_w = parameters.synapses[3]
-        self.AIZ_w = parameters.synapses[4]
+        self.AIY_w = parameters.synapses[2]
+        self.AIZ_w = parameters.synapses[3:5]
 
         self.AIY_gap = parameters.junctions[0]
         self.AIZ_gap = parameters.junctions[1]
@@ -88,12 +76,14 @@ class SteeringCircuit:
         differential = self.get_differential(concentration)
 
         self.ASE[0].potential += (max(0,differential) - self.ASE[0].potential) * self.dt / self.ASE[0].time_const
-        self.ASE[1].potential += (max(0,-differential) - self.ASE[1].potential) * self.dt / self.ASE[0].time_const
+        self.ASE[1].potential += (max(0,-differential) - self.ASE[1].potential) * self.dt / self.ASE[1].time_const
 
-        self.AIY[0].potential += (((self.ASE_w[0] * self.ASE[0].output() + self.ASE_w[1] * self.ASE[1].output()) - self.AIY[0].potential) + (self.AIY_gap * (self.AIY[1].potential - self.AIY[0].potential))) * self.dt / self.AIY[0].time_const
-        self.AIY[1].potential += (((self.ASE_w[1] * self.ASE[0].output() + self.ASE_w[0] * self.ASE[1].output()) - self.AIY[1].potential) + (self.AIY_gap * (self.AIY[0].potential - self.AIY[1].potential))) * self.dt / self.AIY[0].time_const
+        # print(self.ASE[0].potential)
 
-        self.AIZ[0].potential = (((self.AIY_w * sigmoid(self.AIY[0].potential + self.AIY[0].threshold)) - self.AIZ[0].potential) + (self.AIZ_gap * (self.AIZ[1].potential - self.AIZ[0].potential))) * self.dt / self.AIZ[0].time_const
-        self.AIZ[1].potential = (((self.AIY_w * sigmoid(self.AIY[1].potential + self.AIY[1].threshold)) - self.AIZ[1].potential) + (self.AIZ_gap * (self.AIZ[0].potential - self.AIZ[1].potential))) * self.dt / self.AIZ[1].time_const
+        self.AIY[0].potential += ((((self.ASE_w[0] * self.ASE[0].get_output() + self.ASE_w[1] * self.ASE[1].get_output())) + (self.AIY_gap * (self.AIY[1].potential - self.AIY[0].potential))) - self.AIY[0].potential) * self.dt / self.AIY[0].time_const
+        self.AIY[1].potential += ((((self.ASE_w[1] * self.ASE[0].get_output() + self.ASE_w[0] * self.ASE[1].get_output())) + (self.AIY_gap * (self.AIY[0].potential - self.AIY[1].potential))) - self.AIY[1].potential) * self.dt / self.AIY[1].time_const
+
+        self.AIZ[0].potential += ((((self.AIY_w * self.AIY[0].get_output())) + (self.AIZ_gap * (self.AIZ[1].potential - self.AIZ[0].potential))) - self.AIZ[0].potential) * self.dt / self.AIZ[0].time_const
+        self.AIZ[1].potential += ((((self.AIY_w * self.AIY[1].get_output())) + (self.AIZ_gap * (self.AIZ[0].potential - self.AIZ[1].potential))) - self.AIZ[1].potential) * self.dt / self.AIZ[1].time_const
 
     

@@ -10,6 +10,7 @@ from matplotlib.animation import FFMpegWriter
 import csv
 
 from simple_worm.frame import FrameSequenceNumpy
+import os
 
 # Live plots a clip
 def plot_midline(FS, dt = 0.001, speed = 1, xlim = [-1,3], ylim = [-3,1]):
@@ -137,7 +138,7 @@ def multiple_FS_to_clip(worms, outname="midline", dt=0.001, speed=1, xlim=[-1,3]
     metadata = dict(title=outname, artist='simple-worm')
     writer = FFMpegWriter(fps=25, metadata=metadata)
 
-    with writer.saving(fig, "2Dvids/" + outname + ".mp4", 100):
+    with writer.saving(fig, outname + ".mp4", 100):
         for i in range(0, len(data[0]), 2):
             for j, (label, plot) in enumerate(zip(labels, plots)):
                 plot.set_data(data[j][i], data[j][i + 1])
@@ -159,7 +160,7 @@ def multiple_worm_path(worms: [str, FrameSequenceNumpy], outname = "midline", xl
         x, y = zip(*line)
         plt.plot(x, y) 
     
-    
+    # plt.set_aspect('equal', adjustable='box')
     plt.xlim(xlim[0], xlim[1])  # Set limits for x-axis
     plt.ylim(ylim[0], ylim[1])  # Set limits for y-axis
 
@@ -171,8 +172,8 @@ def multiple_worm_path(worms: [str, FrameSequenceNumpy], outname = "midline", xl
     # plt.show()
 
     # Save the plot to a file
-    print(outname)
-    plt.savefig(f'pics/{outname}')
+
+    plt.savefig(f'{outname}')
     plt.close()
 
 
@@ -220,3 +221,26 @@ def multiple_worm_path_matrix(worms: [(str, 'FrameSequenceNumpy')], outname="mid
     plt.close()
 
 # Note: 'FrameSequenceNumpy' should be replaced with the appropriate type for FS if needed.
+
+
+import pandas as pd
+import matplotlib.pyplot as plt
+
+def plot_neurones():
+    # Load the data from CSV
+    df = pd.read_csv('neuron_data.csv')
+
+    # Define the figure size and grid layout
+    plt.figure(figsize=(20, 10))
+    for i, column in enumerate(df.columns[1:], start=1):  # Skip the first column if it's a timestamp
+        print(column)
+        plt.subplot(4, 2, i)
+        plt.plot(df['timestamp'].to_numpy(), df[column].to_numpy(), label=column)
+        plt.xlabel('Timestamp')
+        plt.ylabel('Output')
+        plt.title(column)
+        plt.legend()
+
+    plt.tight_layout()
+    plt.savefig('neurons_plot.png')
+    plt.close()
