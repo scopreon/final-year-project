@@ -9,6 +9,7 @@ from simple_worm.material_parameters import MaterialParametersFenics
 from simple_worm.util import f2n
 from simple_worm.neural_circuit import NeuralModel
 from simple_worm.neural_parameters import NeuralParameters
+from simple_worm.worm_environment import Environment
 
 import csv
 
@@ -48,7 +49,8 @@ class Worm:
             forward_solver_opts: dict = None,
             quiet: bool = False,
             neural_control: bool = False,
-            NP: NeuralParameters = NeuralParameters()
+            NP: NeuralParameters = NeuralParameters(),
+            environment = Environment(),
     ):
         # Domain
         self.N = N
@@ -58,6 +60,7 @@ class Worm:
         self.parameters: MaterialParametersFenics = None
         self.neural_control = neural_control
         self.neural_parameters = NP
+        self.environment = environment
 
         # Solver options
         self.forward_solver = forward_solver
@@ -180,7 +183,8 @@ class Worm:
             csvfile = open(savefile + '.csv', 'w', newline='')
             csvwriter = csv.writer(csvfile)
         for i in range(n_timesteps):
-            # self._print(f't={self.t:.3f}')
+            
+            self._print(f't={self.t:.3f}')
             if self.neural_control:
                 if savefile != "":
                     try:
@@ -189,7 +193,8 @@ class Worm:
                         print(f'Error in writing to file: {e} (at timestep {self.t:.3f})')
                         savefile = ""
                         csvfile.close()
-                new_alpha = self.neural.update_all(self.get_alpha())
+                # inject into neuron here with specific environment variables, based on timescale not x
+                new_alpha = self.neural.update_all(self.get_alpha(), env = self.environment.get_parameters_at(self.get_x()[0][0], self.get_x()[2][0]), timestamp=self.t)
                 C = ControlsNumpy(alpha=new_alpha, beta=np.zeros(self.N), gamma=np.zeros(self.N-1)).to_fenics(self)
             else:
                 C = CS[i]

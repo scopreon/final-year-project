@@ -1,3 +1,5 @@
+from simple_worm.steering_parameters import SteeringParameters
+
 NP_DEFAULT_NEURAL_UNITS = 12  # number of neural units
 
 NP_DEFAULT_ALPHA = 10  # curvature amplitude
@@ -18,6 +20,9 @@ NP_DEFAULT_MUSCLE_LOSS = 0.6  # muscle loss over length
 
 NP_DEFAULT_PF_UNITS = 6  # proprioceptive units
 
+NP_DEFAULT_STEERING_PARAMETERS = SteeringParameters() # default value for M in steering
+
+NP_DEFAULT_STEERING = False
 
 class NeuralParameters:
     def __init__(
@@ -34,6 +39,8 @@ class NeuralParameters:
         MUSCLE_LOSS=NP_DEFAULT_MUSCLE_LOSS,
         PF_UNITS=NP_DEFAULT_PF_UNITS,
         USE_HEAD_NECK_CIRCUIT=NP_DEFAULT_USE_HEAD_NECK_CIRCUIT,
+        STEERING_PARAMETERS=NP_DEFAULT_STEERING_PARAMETERS,
+        STEERING=NP_DEFAULT_STEERING,
         TEMP_VAR=None
     ) -> None:
         self.neural_units = NEURAL_UNITS
@@ -48,4 +55,6 @@ class NeuralParameters:
         self.muscle_loss = MUSCLE_LOSS
         self.pf_units = PF_UNITS
         self.head_neck_used = USE_HEAD_NECK_CIRCUIT
+        self.steering_parameters = STEERING_PARAMETERS
+        self.steering=STEERING
         self.temp_var = TEMP_VAR
